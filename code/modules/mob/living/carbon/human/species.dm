@@ -115,7 +115,6 @@ GLOBAL_LIST_EMPTY(roundstart_race_datums)
 // PROCS //
 ///////////
 
-
 /datum/species/New()
 	//if we havent set a limbs id to use, just use our own id
 	if(!limbs_id)
@@ -1770,13 +1769,13 @@ GLOBAL_LIST_EMPTY(roundstart_race_datums)
 	armor_block = min(95,armor_block) //cap damage reduction at 95%
 	var/Iwound_bonus = I.wound_bonus
 
-	// this way, you can't wound with a surgical tool on help intent if they have a surgery active and are laying down, so a misclick with a circular saw on the wrong limb doesn't bleed them dry (they still get hit tho)
-	if((I.item_flags & SURGICAL_TOOL) && user.a_intent == INTENT_HELP && (H.mobility_flags & ~MOBILITY_STAND) && (LAZYLEN(H.surgeries) > 0))
+	// this way, you can't wound with a surgical tool on help intent if they have a surgery active, so a misclick with a circular saw on the wrong limb doesn't bleed them dry (they still get hit tho)
+	if((I.item_flags & SURGICAL_TOOL) && (user.a_intent == INTENT_HELP) && (LAZYLEN(H.surgeries) > 0))
 		Iwound_bonus = CANT_WOUND
 	//
 	var/weakness = H.check_weakness(I, user)
 
-	H.send_item_attack_message(I, user, hit_area, affecting)
+	H.send_item_attack_message(I, user, hit_area, totitemdamage, affecting)
 	
 	apply_damage(totitemdamage * weakness, I.damtype, def_zone, armor_block, H, wound_bonus = Iwound_bonus, bare_wound_bonus = I.bare_wound_bonus, sharpness = I.get_sharpness()) //CIT CHANGE - replaces I.force with totitemdamage //skyrat edit
 
@@ -1793,12 +1792,12 @@ GLOBAL_LIST_EMPTY(roundstart_race_datums)
 				bloody = 1
 				if(get_dist(user, H) <= 1)	//people with TK won't get smeared with blood
 					user.add_mob_blood(H)
-				var/dist = rand(1,max(min(round(totitemdamage/5, 1),3), 1))
+				var/dist = rand(0,max(min(round(totitemdamage/5, 1),3), 1))
 				var/turf/location = get_turf(H)
 				if(istype(location))
 					H.add_splatter_floor(location)
 				var/turf/targ = get_ranged_target_turf(user, get_dir(user, H), dist)
-				if(istype(targ))
+				if(istype(targ) && dist > 0 && ((inherent_biotypes & MOB_ORGANIC) || (inherent_biotypes & MOB_HUMANOID)))
 					var/obj/effect/decal/cleanable/blood/hitsplatter/B = new(H.loc, H.get_blood_dna_list())
 					B.add_blood_DNA(H.get_blood_dna_list())
 					B.GoTo(targ, dist)
@@ -1813,7 +1812,7 @@ GLOBAL_LIST_EMPTY(roundstart_race_datums)
 											"<span class='userdanger'>You have been knocked senseless!</span>")
 							H.confused = max(H.confused, 20)
 							H.adjust_blurriness(10)
-						if(prob(10))
+						if(prob(5))
 							H.gain_trauma(/datum/brain_trauma/mild/concussion)
 					else
 						H.adjustOrganLoss(ORGAN_SLOT_BRAIN, I.force * 0.2)
@@ -2298,16 +2297,11 @@ GLOBAL_LIST_EMPTY(roundstart_race_datums)
 /**
   * The human species version of [/mob/living/carbon/proc/get_biological_state]. Depends on the HAS_SKIN, HAS_FLESH and HAS_BONE species traits, having bones lets you have bone wounds, having flesh lets you have burn, slash, and piercing wounds, skin is currently unused
   */
-/datum/species/proc/get_biological_state(mob/living/carbon/human/H)
+/datum/species/proc/get_biological_state()
 	. = BIO_INORGANIC
 	if(HAS_SKIN in species_traits)
-		. &= ~BIO_INORGANIC
 		. |= BIO_SKIN
 	if(HAS_FLESH in species_traits)
-		. &= ~BIO_INORGANIC
 		. |= BIO_FLESH
 	if(HAS_BONE in species_traits)
-		. &= ~BIO_INORGANIC
 		. |= BIO_BONE
-	if(species_traits & list(HAS_BONE, HAS_FLESH, HAS_SKIN))
-		. = BIO_FULL

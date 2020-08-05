@@ -8,6 +8,7 @@
 	processes = TRUE
 	wound_type = WOUND_LIST_PIERCE
 	treatable_by = list(/obj/item/stack/medical/suture)
+	treatable_by_grabbed = list(/obj/item/gun/energy/laser)
 	treatable_tool = TOOL_CAUTERY
 	accepts_gauze = TRUE
 
@@ -76,7 +77,9 @@
 		qdel(src)
 
 /datum/wound/pierce/treat(obj/item/I, mob/user)
-	if(istype(I, /obj/item/stack/medical/suture))
+	if(istype(I, /obj/item/gun/energy/laser))
+		las_cauterize(I, user)
+	else if(istype(I, /obj/item/stack/medical/suture))
 		suture(I, user)
 	else if(I.tool_behaviour == TOOL_CAUTERY || I.get_temperature() > 300)
 		tool_cauterize(I, user)
@@ -112,20 +115,35 @@
 		return
 
 	user.visible_message("<span class='green'>[user] cauterizes some of the bleeding on [victim].</span>", "<span class='green'>You cauterize some of the bleeding on [victim].</span>")
-	limb.receive_damage(burn = 2 + severity, wound_bonus = CANT_WOUND)
+	limb.receive_damage(burn = min(1 + severity, 3), wound_bonus = CANT_WOUND)
 	if(prob(30))
 		victim.emote("scream")
-	var/blood_cauterized = (0.6 / self_penalty_mult) * 0.5
+	var/blood_cauterized = (0.6 / max(1, self_penalty_mult))
 	blood_flow -= blood_cauterized
 
 	if(blood_flow > 0)
 		try_treating(I, user)
 
+/// If someone's putting a laser gun up to our cut to cauterize it
+/datum/wound/pierce/proc/las_cauterize(obj/item/gun/energy/laser/lasgun, mob/user)
+	var/self_penalty_mult = (user == victim ? 2 : 1)
+	user.visible_message("<span class='warning'>[user] begins aiming [lasgun] directly at [victim]'s [fake_limb ? "[fake_limb] stump" : limb.name]...</span>", "<span class='userdanger'>You begin aiming [lasgun] directly at [user == victim ? "your" : "[victim]'s"] [fake_limb ? "[fake_limb] stump" : limb.name]...</span>")
+	if(!do_after(user, base_treat_time  * self_penalty_mult, target=victim, extra_checks = CALLBACK(src, .proc/still_exists)))
+		return
+	var/damage = lasgun.chambered.BB.damage
+	lasgun.chambered.BB.wound_bonus -= 30
+	lasgun.chambered.BB.damage *= self_penalty_mult
+	if(!lasgun.process_fire(victim, victim, TRUE, null, limb.body_zone))
+		return
+	victim.emote("scream")
+	blood_flow -= damage / (5 * self_penalty_mult) // 20 / 5 = 4 bloodflow removed, p good
+	victim.visible_message("<span class='warning'>The punctures on [victim]'s [fake_limb ? "[fake_limb] stump" : limb.name] scar over!</span>")
+
 /datum/wound/pierce/moderate
 	name = "Minor Breakage"
 	desc = "Patient's skin has been broken open, causing severe bruising and minor internal bleeding in affected area."
 	treat_text = "Treat affected site with bandaging or exposure to extreme cold. In dire cases, brief exposure to vacuum may suffice." // lol shove your bruised arm out into space, ss13 logic
-	examine_desc = "has a small, circular hole, gently bleeding"
+	examine_desc = "has a small, circular hole, slowly bleeding"
 	occur_text = "spurts out a thin stream of blood"
 	sound_effect = 'modular_skyrat/sound/effects/blood1.ogg'
 	severity = WOUND_SEVERITY_MODERATE
@@ -144,7 +162,7 @@
 	desc = "Patient's internal tissue is penetrated, causing sizeable internal bleeding and reduced limb stability."
 	treat_text = "Repair punctures in skin by suture or cautery, extreme cold may also work."
 	examine_desc = "is pierced clear through, with bits of tissue obscuring the open hole"
-	occur_text = "lets loose a violent spray of blood, revealing a nasty pierced wound"
+	occur_text = "lets loose a violent spray of blood, revealing a nasty pierce wound"
 	sound_effect = 'modular_skyrat/sound/effects/blood2.ogg'
 	severity = WOUND_SEVERITY_SEVERE
 	viable_zones = ALL_BODYPARTS
@@ -161,7 +179,7 @@
 	name = "Ruptured Cavity"
 	desc = "Patient's internal tissue and circulatory system is shredded, causing significant internal bleeding and damage to internal organs."
 	treat_text = "Surgical repair of puncture wound, followed by supervised resanguination."
-	examine_desc = "is ripped clear through, barely held together by exposed bone"
+	examine_desc = "is ripped clear through, barely held together by exposed bone and tissue"
 	occur_text = "blasts apart, sending chunks of viscera flying in all directions"
 	sound_effect = 'modular_skyrat/sound/effects/blood3.ogg'
 	severity = WOUND_SEVERITY_CRITICAL

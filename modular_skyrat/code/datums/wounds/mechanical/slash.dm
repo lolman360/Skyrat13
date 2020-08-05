@@ -129,13 +129,13 @@
 	if(!do_after(user, base_treat_time * time_mod * self_penalty_mult, target=victim, extra_checks = CALLBACK(src, .proc/still_exists)))
 		return
 
-	limb.heal_damage(2.5, 2.5)
+	limb.heal_damage(10, 10)
 	welded = TRUE
 	if(patched)
 		user.visible_message("<span class='green'>[user] welds \the [patch] on [victim]'s [limb.name] with [I].</span>", "<span class='green'>You weld \the patch on [user == victim ? "your" : "[victim]'s"] [limb.name] with [I].</span>")
 	else
 		user.visible_message("<span class='green'>[user] welds \the [lowertext(name)] [victim]'s [limb.name] with [I].</span>", "<span class='green'>You weld \the [lowertext(name)] on [user == victim ? "your" : "[victim]'s"] [limb.name] with [I].</span>")
-	var/blood_cauterized = (1 / self_penalty_mult) * 0.25 * max(0.5, patched)
+	var/blood_cauterized = (1 / self_penalty_mult) * max(0.5, patched)
 	blood_flow -= blood_cauterized
 
 	if(repeat_patch)
@@ -164,8 +164,8 @@
 		to_chat(user, "<span class='warning'>[capitalize(I)] doesn't have enough sheets!</span>")
 		return
 
-	limb.heal_damage(3.5 * power/2, 2.5 * power)
-	var/blood_cauterized = power * 0.10
+	limb.heal_damage(5 * power, 5 * power)
+	var/blood_cauterized = power * 0.15
 	blood_flow -= blood_cauterized
 	patch = "[lowertext(I.name)]"
 	patched = power
@@ -175,7 +175,7 @@
 /datum/wound/mechanical/slash/moderate
 	name = "Ripped Metal"
 	desc = "Patient's exoskeleton has been badly ripped, generating moderate hydraulic leakage."
-	treat_text = "Welding and fusing the jagged metal together."
+	treat_text = "Recommended mineral patching and welding of the affected area, but application of sticky tape may suffice."
 	examine_desc = "has an open tear"
 	occur_text = "is ripped open, slowly leaking hydraulic fluid"
 	sound_effect = 'modular_skyrat/sound/effects/blood1.ogg'
@@ -193,7 +193,7 @@
 /datum/wound/mechanical/slash/severe
 	name = "Jagged Tear"
 	desc = "Patient's exoskleton has been severely ripped, allowing significant fluid leakage."
-	treat_text = "Application and welding of a mineral patch."
+	treat_text = "Recommended full internal repair, but mineral patching, taping and welding of the limb may suffice."
 	examine_desc = "has a severe tear"
 	occur_text = "is ripped open, cables spurting fluid"
 	sound_effect = 'modular_skyrat/sound/effects/blood2.ogg'
@@ -212,7 +212,7 @@
 /datum/wound/mechanical/slash/critical
 	name = "Torn Cabling"
 	desc = "Patient's exoskeleton is completely torn open, along with loss of armoring. Extreme leakage."
-	treat_text = "Immediate bandaging and either suturing or cauterization, followed by supervised resanguination."
+	treat_text = "Full internal repair of the affected area, but mineral patching, taping and welding of the limb can prevent a worsening situation."
 	examine_desc = "is spurting hydraulic fluid at an alarming rate"
 	occur_text = "is torn open, spraying fluid wildly"
 	sound_effect = 'modular_skyrat/sound/effects/blood3.ogg'
@@ -227,3 +227,20 @@
 	demotes_to = /datum/wound/mechanical/slash/severe
 	status_effect_type = /datum/status_effect/wound/slash/critical
 	scarring_descriptions = list("a winding path of very badly healed scar tissue", "a series of peaks and valleys along a gruesome line of cut scar tissue", "a grotesque snake of indentations and stitching scars")
+
+/datum/wound/mechanical/slash/critical/incision
+	name = "Open Hatch"
+	desc = "Patient has had his hatch opened for surgical purposes."
+	treat_text = "Finalization of surgical procedures on the affected limb."
+	examine_desc = "is mechanically opened, components visible from it's open hatches"
+	occur_text = "is mechanically breached"
+	sound_effect = 'modular_skyrat/sound/effects/blood1.ogg'
+	severity = WOUND_SEVERITY_CRITICAL
+	viable_zones = ALL_BODYPARTS
+	wound_type = WOUND_LIST_INCISION_MECHANICAL
+	initial_flow = 1.5
+	minimum_flow = 0.1
+	clot_rate = 0.02
+	max_per_type = 5
+	demotes_to = null
+	scarring_descriptions = list("a precise line of scarred tissue", "a long line of slightly darker tissue")

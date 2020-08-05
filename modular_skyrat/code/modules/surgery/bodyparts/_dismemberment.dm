@@ -3,6 +3,11 @@
 	if(dismemberable)
 		return TRUE
 
+//Check if the limb is disembowable
+/obj/item/bodypart/proc/can_disembowel(obj/item/I)
+	if(disembowable)
+		return TRUE
+
 //Dismember a limb
 /obj/item/bodypart/proc/dismember(dam_type = BRUTE, silent = FALSE, destroy = FALSE)
 	if(!owner)
@@ -49,7 +54,7 @@
 	return TRUE
 
 //Disembowel a limb
-/obj/item/bodypart/proc/disembowel(dam_type = BRUTE, silent = FALSE)
+/obj/item/bodypart/proc/disembowel(dam_type = BRUTE, silent = FALSE, wound = FALSE)
 	if(!owner)
 		return FALSE
 	var/mob/living/carbon/C = owner
@@ -65,7 +70,7 @@
 	for(var/X in C.internal_organs)
 		var/obj/item/organ/O = X
 		var/org_zone = check_zone(O.zone)
-		if(org_zone != body_zone)
+		if((org_zone != body_zone) || (O.organ_flags & ORGAN_NO_DISMEMBERMENT))
 			continue
 		O.Remove()
 		O.forceMove(T)
@@ -79,10 +84,18 @@
 		organ_spilled = 1
 
 	if(organ_spilled)
-		if(!silent)
+		if(!silent && !wound)
 			playsound(get_turf(C), 'sound/misc/splort.ogg', 80, 1)
 			C.visible_message("<span class='danger'><B>[C]'s [parse_zone(body_zone)] organs spill out onto the floor!</B></span>")
-		C.bleed(50)
+		if(wound)
+			if(is_organic_limb())
+				var/datum/wound/slash/critical/incision/disembowel/D = new()
+				D.apply_wound(src)
+			else
+				var/datum/wound/mechanical/slash/critical/incision/disembowel/D = new()
+				D.apply_wound(src)
+
+		C.bleed(40)
 		return TRUE
 	
 	return FALSE
@@ -203,10 +216,10 @@
 	var/required_flesh_severity = WOUND_SEVERITY_SEVERE
 	var/required_skin_severity = WOUND_SEVERITY_MODERATE
 
-	if(owner && owner.get_biological_state() == BIO_BONE && !HAS_TRAIT(owner, TRAIT_EASYDISMEMBER))
+	if(owner && (owner.get_biological_state() == BIO_BONE || owner.get_biological_state() == BIO_BONE|BIO_SKIN) && !HAS_TRAIT(owner, TRAIT_EASYDISMEMBER))
 		required_bone_severity = WOUND_SEVERITY_CRITICAL
 	
-	if(owner && owner.get_biological_state() == BIO_FLESH && !HAS_TRAIT(owner, TRAIT_EASYDISMEMBER))
+	if(owner && (owner.get_biological_state() == BIO_FLESH || owner.get_biological_state() == BIO_FLESH|BIO_SKIN) && !HAS_TRAIT(owner, TRAIT_EASYDISMEMBER))
 		required_flesh_severity = WOUND_SEVERITY_CRITICAL
 
 	if(owner && owner.get_biological_state() == BIO_SKIN && !HAS_TRAIT(owner, TRAIT_EASYDISMEMBER))
@@ -278,7 +291,7 @@
 	dismembering.apply_dismember(src, wounding_type)
 
 /obj/item/bodypart/proc/try_disembowel(wounding_type, wounding_dmg, wound_bonus, bare_wound_bonus)
-	if(!can_dismember() || !disembowable || (wounding_dmg < DISMEMBER_MINIMUM_DAMAGE))
+	if(!can_disembowel() || !disembowable || (wounding_dmg < DISMEMBER_MINIMUM_DAMAGE))
 		return FALSE
 	var/base_chance = wounding_dmg + ((get_damage() / max_damage) * 50) // how much damage we dealt with this blow, + 50% of the damage percentage we already had on this bodypart
 	var/bio_state = owner.get_biological_state()

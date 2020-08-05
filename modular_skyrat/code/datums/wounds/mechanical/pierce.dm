@@ -93,13 +93,13 @@
 	if(!do_after(user, base_treat_time * time_mod * self_penalty_mult, target=victim, extra_checks = CALLBACK(src, .proc/still_exists)))
 		return
 
-	limb.heal_damage(2.5, 2.5)
+	limb.heal_damage(10, 10)
 	welded = TRUE
 	if(patched)
 		user.visible_message("<span class='green'>[user] welds \the [patch] on [victim]'s [limb.name] with [I].</span>", "<span class='green'>You weld \the patch on [user == victim ? "your" : "[victim]'s"] [limb.name] with [I].</span>")
 	else
 		user.visible_message("<span class='green'>[user] welds \the [lowertext(name)] [victim]'s [limb.name] with [I].</span>", "<span class='green'>You weld \the [lowertext(name)] on [user == victim ? "your" : "[victim]'s"] [limb.name] with [I].</span>")
-	var/blood_cauterized = (1 / self_penalty_mult) * 0.25 * max(0.5, patched)
+	var/blood_cauterized = (1 / self_penalty_mult) * max(0.5, patched)
 	blood_flow -= blood_cauterized
 
 	if(repeat_patch)
@@ -126,8 +126,8 @@
 		to_chat(user, "<span class='warning'>[capitalize(I)] doesn't have enough sheets!</span>")
 		return
 
-	limb.heal_damage(3.5 * power/2, 2.5 * power)
-	var/blood_cauterized = power * 0.10
+	limb.heal_damage(3.5 * power/2, 3.5 * power)
+	var/blood_cauterized = power * 0.15
 	blood_flow -= blood_cauterized
 	patch = "[lowertext(I.name)]"
 	patched = power
@@ -169,7 +169,7 @@
 /datum/wound/mechanical/pierce/severe
 	name = "Open Dent"
 	desc = "Patient's internals have been severely punctured, causing reduced limb stability and noticeable hydraulic leakage."
-	treat_text = "Recommended full internal repair, but mineral patching and welding of the limb may suffice."
+	treat_text = "Recommended full internal repair, but mineral patching, taping and welding of the limb may suffice."
 	examine_desc = "is pierced clear through, with jagged metal edges leaking hydraulic fluids"
 	occur_text = "looses a violent spray of hydraulic fluid, revealing a considerable hole"
 	sound_effect = 'modular_skyrat/sound/effects/blood2.ogg'
@@ -188,7 +188,7 @@
 /datum/wound/mechanical/pierce/critical
 	name = "Ruptured Hydraulics"
 	desc = "Patient's hydraulic cablings have been shredded, causing critical leakage and damage to internal components."
-	treat_text = "Full internal repair of the affected area."
+	treat_text = "Full internal repair of the affected area, but mineral patching, taping and welding of the limb can prevent a worsening situation."
 	examine_desc = "is ripped clear through, barely held together by it's endoskeleton"
 	occur_text = "blasts apart, sending metallic shrapnel flying in all directions"
 	sound_effect = 'modular_skyrat/sound/effects/blood3.ogg'

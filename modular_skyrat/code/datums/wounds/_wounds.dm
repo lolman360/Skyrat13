@@ -129,6 +129,8 @@
 /datum/wound/Destroy()
 	if(attached_surgery)
 		QDEL_NULL(attached_surgery)
+	if(victim?.all_wounds && (src in victim.all_wounds))
+		victim.all_wounds -= src
 	if(limb?.wounds && (src in limb.wounds)) // destroy can call remove_wound() and remove_wound() calls qdel, so we check to make sure there's anything to remove first
 		remove_wound()
 	limb = null
@@ -211,8 +213,15 @@
 		if(severity > WOUND_SEVERITY_MODERATE)
 			msg = "<b>[msg]</b>"
 			vis_dist = DEFAULT_MESSAGE_RANGE
-
-		victim.visible_message(msg, "<span class='userdanger'>Your [limb.name] [occur_text]!</span>", vision_distance = vis_dist)
+		var/list/ignore =list()
+		for(var/mob/Y in view(vis_dist, L.owner))
+			if(Y != L.owner)
+				if(Y.client?.prefs?.chat_toggles & CHAT_WOUNDS_OTHER)
+					ignore |= Y
+			else
+				if(Y.client?.prefs?.chat_toggles & CHAT_WOUNDS_SELF)
+					ignore |= Y
+		victim.visible_message(msg, (L.owner?.client?.prefs?.chat_toggles & CHAT_WOUNDS_SELF ? null : "<span class='userdanger'>Your [limb.name] [occur_text]!</span>"), vision_distance = vis_dist, ignored_mobs = ignore)
 		if(sound_effect)
 			playsound(L.owner, sound_effect, 60 + 20 * severity, TRUE)
 

@@ -61,7 +61,7 @@
 			msg += "<B>[t_His] [BP.name] has \"[BP.etching]\" etched on it!</B>\n"
 		for(var/datum/wound/W in BP.wounds)
 			msg += "[W.get_examine_description(user)]\n"
-			if(istype(W, /datum/wound/slash/critical/incision))
+			if(istype(W, /datum/wound/slash/critical/incision) || istype(W, /datum/wound/mechanical/slash/critical/incision))
 				for(var/obj/item/organ/O in getorganszone(BP.body_zone))
 					for(var/i in O.surgical_examine(user))
 						msg += "<B>[icon2html(O.examine_icon ? O.examine_icon : O, user, O.examine_icon_state ? O.examine_icon_state : O.icon_state)] [i]</B>\n"
@@ -264,75 +264,78 @@
 
 //skyrat edit
 /mob/living/carbon/examine_more(mob/user)
+	var/msg = list("<span class='notice'><i>You examine [src] closer, and note the following...</i></span>")
 	if((src == user) && HAS_TRAIT(user, TRAIT_SCREWY_CHECKSELF))
-		return ..()
+		msg |= "\t<span class='smallnotice'>[p_they(TRUE)] have no significantly damaged bodyparts.</span>"
+		msg |= "\t<span class='smallnotice'><i>[p_they(TRUE)] have no visible scars.</i></span>"
+		return msg
+	
+	var/list/damaged_bodypart_text = list()
+	for(var/obj/item/bodypart/BP in bodyparts)
+		var/how_brute = ""
+		var/how_burn = ""
+		var/max_sev = 0
+		var/sev = 0
+		var/styletext = "tinydanger"
+		var/text = ""
+		if(!BP.brute_dam && !BP.burn_dam)
+			continue
+		if(BP.brute_dam >= (BP.max_damage/3))
+			sev = round(BP.brute_dam/BP.max_damage * 3, 1)
+			max_sev = max(max_sev, sev)
+			switch(sev)
+				if(1)
+					how_brute = BP.light_brute_msg
+				if(2)
+					how_brute = BP.medium_brute_msg
+				if(3)
+					how_brute = BP.heavy_brute_msg
+		if(BP.burn_dam >= (BP.max_damage/3))
+			sev = round(BP.burn_dam/BP.max_damage * 3, 1)
+			max_sev = max(max_sev, sev)
+			switch(sev)
+				if(1)
+					how_burn = BP.light_burn_msg
+				if(2)
+					how_burn = BP.medium_burn_msg
+				if(3)
+					how_burn = BP.heavy_burn_msg
+		switch(max_sev)
+			if(1)
+				styletext = "tinydanger"
+			if(2)
+				styletext = "smalldanger"
+			if(3)
+				styletext = "danger"
+		if(how_brute && how_burn)
+			text = "\t<span class='[styletext]'>[p_their(TRUE)] [BP] is [how_brute] and [how_burn][max_sev >= 2 ? "!" : "."]</span>"
+		else if(how_brute)
+			text = "\t<span class='[styletext]'>[p_their(TRUE)] [BP] is [how_brute][max_sev >= 2 ? "!" : "."]</span>"
+		else if(how_burn)
+			text = "\t<span class='[styletext]'>[p_their(TRUE)] [BP] is [how_burn][max_sev >= 2 ? "!" : "."]</span>"
+		
+		if(length(text))
+			damaged_bodypart_text |= text
+	
+	msg |= damaged_bodypart_text
 
+	if(!length(damaged_bodypart_text))
+		msg |= "\t<span class='smallnotice'>[p_they(TRUE)] have no significantly damaged bodyparts.</span>"
+	
 	var/list/visible_scars = list()
 	for(var/i in all_scars)
 		var/datum/scar/S = i
 		if(istype(S) && S.is_visible(user))
 			LAZYADD(visible_scars, S)
-
-	var/msg = list("<span class='notice'><i>You examine [src] closer, and note the following...</i></span>")
 	
-	for(var/obj/item/bodypart/BP in bodyparts)
-		var/how_brute
-		var/how_burn
-		var/max_sev = 0
-
-		if(!BP.brute_dam)
-			how_brute = BP.no_brute_msg
-			max_sev = max(max_sev, 0)
-		else if(BP.brute_dam < (BP.max_damage * 0.33))
-			how_brute = BP.light_brute_msg
-			max_sev = max(max_sev, 1)
-		else if(BP.brute_dam < (BP.max_damage * 0.66))
-			how_brute = BP.medium_brute_msg
-			max_sev = max(max_sev, 2)
-		else if(BP.brute_dam <= BP.max_damage)
-			how_brute = BP.heavy_brute_msg
-			max_sev = max(max_sev, 3)
-
-		if(!BP.burn_dam)
-			how_burn = BP.no_burn_msg
-			max_sev = max(max_sev, 0)
-		else if(BP.burn_dam < (BP.max_damage * 0.33))
-			how_burn = BP.light_burn_msg
-			max_sev = max(max_sev, 1)
-		else if(BP.burn_dam < (BP.max_damage * 0.66))
-			how_burn = BP.medium_burn_msg
-			max_sev = max(max_sev, 2)
-		else if(BP.burn_dam <= BP.max_damage)
-			how_burn = BP.heavy_burn_msg
-			max_sev = max(max_sev, 3)
-		
-		var/style
-		switch(max_sev)
-			if(0)
-				style = "tinynotice"
-			if(1)
-				style = "tinydanger"
-			if(2)
-				style = "smalldanger"
-			if(3)
-				style = "danger"
-		var/aaa = ""
-		aaa += "\t<span class='[style]'>[capitalize(p_their())] [BP.name] is "
-		if((how_brute == BP.no_brute_msg) && (how_burn != BP.no_burn_msg))
-			aaa += "[how_brute], but it is [how_burn]"
-		else if((how_brute == BP.no_brute_msg) && (how_burn == BP.no_burn_msg))
-			aaa += "[how_brute] and [how_burn]"
-		else if((how_brute != BP.no_brute_msg) && (how_burn == BP.no_burn_msg))
-			aaa += "[how_burn], but it is [how_brute]"
-		else if((how_brute != BP.no_brute_msg) && (how_burn != BP.no_burn_msg))
-			aaa += "[how_brute] and [how_burn]"
-		aaa += "[max_sev >= 3 ? "!" : "."]</span>"
-		msg += aaa
-
 	for(var/i in visible_scars)
 		var/datum/scar/S = i
 		var/scar_text = S.get_examine_description(user)
 		if(scar_text)
-			msg += "[scar_text]"
-
+			msg |= "\t[scar_text]"
+	
+	if(!length(visible_scars))
+		msg |= "\t<span class='smallnotice'><i>[p_they(TRUE)] have no visible scars.</i></span>"
+	
 	return msg
+//

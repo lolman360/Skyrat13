@@ -46,11 +46,11 @@
 		if(WOUND_PIERCE)
 			occur_text = "is deeply pierced through, internal organs easily falling out of the gaping wound"
 			if(L.is_robotic_limb())
-				occur_text = "is deeply pierced through, internal components easily falling out of the gaping wound"
+				occur_text = "is deeply pierced through, internal components easily falling out of the gaping hole"
 		if(WOUND_BURN)
-			occur_text = "gets a hole burned through it, burnt organs falling out"
+			occur_text = "gets a hole burned through it, slightly charred organs falling out"
 			if(L.is_robotic_limb())
-				occur_text = "gets a critical amount of metal molten, opening a gaping hole from which components fall through"
+				occur_text = "gets a critical amount of metal molten, opening a gaping hole from which slightly components fall through"
 
 	var/mob/living/carbon/victim = L.owner
 	victim.confused += 10
@@ -81,10 +81,10 @@
 	second_wind()
 	log_wound(victim, src)
 	qdel(src)
-	return L.disembowel(dam_type = (wounding_type == WOUND_BURN ? BURN : BRUTE),silent = TRUE)
+	return L.disembowel(dam_type = (wounding_type == WOUND_BURN ? BURN : BRUTE),silent = TRUE, wound = TRUE)
 
 /datum/wound/slash/critical/incision/disembowel
-	name = "Disemboweled"
+	name = "Disembowelment"
 	desc = "Patient's limb has been violently avulsioned, to the point of large chunks of flesh and organs getting lost."
 	treat_text = "Immediate surgical closure of the wound, as well as reimplantation of lost organs."
 	examine_desc = "has a wide and gaping wound, enough to see through the flesh"
@@ -94,8 +94,8 @@
 	wound_type = WOUND_LIST_DISEMBOWEL
 	ignore_preexisting = TRUE
 	initial_flow = 2
-	minimum_flow = 0.5
-	clot_rate = -0.05
+	minimum_flow = 0
+	clot_rate = 0
 	max_per_type = 4
 	threshold_penalty = 80
 	demotes_to = null
@@ -104,18 +104,20 @@
 	scarring_descriptions = list("is several skintone shades paler than the rest of the body", "is a gruesome patchwork of artificial flesh", "has a large series of attachment scars at the articulation points")
 	required_status = BODYPART_ORGANIC
 	biology_required = list()
+	sound_effect = 'sound/misc/splort.ogg'
 
-/datum/wound/slash/loss/get_examine_description(mob/user)
-	. = ..()
-	if(fake_body_zone == BODY_ZONE_HEAD)
-		return "<span class='deadsay'>[..()]</span>"
-
-/datum/wound/slash/loss/apply_wound(obj/item/bodypart/L, silent, datum/wound/old_wound, smited)
+/datum/wound/slash/critical/incision/disembowel/apply_wound(obj/item/bodypart/L, silent, datum/wound/old_wound, smited)
 	. = ..()
 	switch(L.body_zone)
+		if(BODY_ZONE_HEAD)
+			initial_flow = 3
+			minimum_flow = 0
+		if(BODY_ZONE_CHEST)
+			initial_flow = 4
+			minimum_flow = 0
 		if(BODY_ZONE_PRECISE_GROIN)
 			initial_flow = 4
-			minimum_flow = 0.5
+			minimum_flow = 0.2
 		if(BODY_ZONE_L_ARM)
 			initial_flow = 2.5
 			minimum_flow = 0.5
@@ -124,22 +126,22 @@
 			minimum_flow = 0.5
 		if(BODY_ZONE_PRECISE_L_HAND)
 			initial_flow = 1.5
-			minimum_flow = 1
+			minimum_flow = 0.75
 		if(BODY_ZONE_PRECISE_R_HAND)
 			initial_flow = 1.5
-			minimum_flow = 1
+			minimum_flow = 0.75
 		if(BODY_ZONE_L_LEG)
 			initial_flow = 3
-			minimum_flow = 0.25
+			minimum_flow = 0.3
 		if(BODY_ZONE_R_LEG)
 			initial_flow = 3
-			minimum_flow = 0.25
+			minimum_flow = 0.3
 		if(BODY_ZONE_PRECISE_L_FOOT)
 			initial_flow = 2
-			minimum_flow = 0.75
+			minimum_flow = 0.5
 		if(BODY_ZONE_PRECISE_R_FOOT)
 			initial_flow = 2
-			minimum_flow = 0.75
+			minimum_flow = 0.5
 
 /datum/wound/mechanical/slash/critical/incision/disembowel
 	name = "Disemboweled"
@@ -152,7 +154,7 @@
 	wound_type = WOUND_LIST_DISEMBOWEL
 	initial_flow = 2
 	minimum_flow = 0.5
-	clot_rate = -0.05
+	clot_rate = 0
 	max_per_type = 4
 	threshold_penalty = 80
 	demotes_to = null
@@ -170,30 +172,36 @@
 /datum/wound/mechanical/slash/critical/incision/disembowel/apply_wound(obj/item/bodypart/L, silent, datum/wound/old_wound, smited)
 	. = ..()
 	switch(L.body_zone)
+		if(BODY_ZONE_HEAD)
+			initial_flow = 3
+			minimum_flow = 0
+		if(BODY_ZONE_CHEST)
+			initial_flow = 4
+			minimum_flow = 0
 		if(BODY_ZONE_PRECISE_GROIN)
 			initial_flow = 4
-			minimum_flow = 0.5
+			minimum_flow = 0.2
 		if(BODY_ZONE_L_ARM)
-			initial_flow = 3
+			initial_flow = 2.5
 			minimum_flow = 0.5
 		if(BODY_ZONE_R_ARM)
-			initial_flow = 3
+			initial_flow = 2.5
 			minimum_flow = 0.5
 		if(BODY_ZONE_PRECISE_L_HAND)
-			initial_flow = 2
+			initial_flow = 1.5
 			minimum_flow = 0.75
 		if(BODY_ZONE_PRECISE_R_HAND)
-			initial_flow = 2
+			initial_flow = 1.5
 			minimum_flow = 0.75
 		if(BODY_ZONE_L_LEG)
-			initial_flow = 3.5
-			minimum_flow = 0.25
+			initial_flow = 3
+			minimum_flow = 0.3
 		if(BODY_ZONE_R_LEG)
-			initial_flow = 3.5
-			minimum_flow = 0.25
+			initial_flow = 3
+			minimum_flow = 0.3
 		if(BODY_ZONE_PRECISE_L_FOOT)
-			initial_flow = 2.5
-			minimum_flow = 0.75
+			initial_flow = 2
+			minimum_flow = 0.5
 		if(BODY_ZONE_PRECISE_R_FOOT)
-			initial_flow = 2.5
-			minimum_flow = 0.75
+			initial_flow = 2
+			minimum_flow = 0.5

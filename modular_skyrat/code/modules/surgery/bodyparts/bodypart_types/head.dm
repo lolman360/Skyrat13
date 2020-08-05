@@ -4,16 +4,16 @@
 	desc = "Didn't make sense not to live for fun, your brain gets smart but your head gets dumb."
 	icon = 'modular_skyrat/icons/mob/human_parts.dmi'
 	icon_state = "default_human_head"
-	max_damage = 200
+	max_damage = 100
 	body_zone = BODY_ZONE_HEAD
 	body_part = HEAD
 	w_class = WEIGHT_CLASS_BULKY
-	slowdown = 1
+	stam_heal_tick = 2
+	stam_damage_coeff = 1
+	max_stamina_damage = 100
 	throw_range = 5
 	px_x = 0
 	px_y = -8
-	stam_damage_coeff = 1
-	max_stamina_damage = 100
 
 	//Limb appearance info:
 	var/real_name = "" //Replacement name
@@ -42,7 +42,12 @@
 	var/obj/item/stack/sticky_tape/tapered = null
 
 /obj/item/bodypart/head/can_dismember(obj/item/I)
-	if(owner && !((owner.stat == DEAD) || owner.InFullCritical()))
+	if(owner && brain && !((owner.stat == DEAD) || owner.InFullCritical()))
+		return FALSE
+	return ..()
+
+/obj/item/bodypart/head/can_disembowel(obj/item/I)
+	if(owner && brain && !((owner.stat == DEAD) || owner.InFullCritical()))
 		return FALSE
 	return ..()
 
@@ -122,7 +127,7 @@
 	. = ..()
 	if(dropped) //certain overlays only appear when the limb is being detached from its owner.
 
-		if(status != BODYPART_ROBOTIC) //having a robotic head hides certain features.
+		if(!(status & BODYPART_ROBOTIC)) //having a robotic head hides certain features.
 			//facial hair
 			if(facial_hair_style)
 				var/datum/sprite_accessory/S = GLOB.facial_hair_styles_list[facial_hair_style]
@@ -133,7 +138,14 @@
 					. += facial_overlay
 
 			//Applies the debrained overlay if there is no brain
-			if(!brain)
+			if(!owner?.getorganslot(ORGAN_SLOT_BRAIN) && !brain)
+				var/datum/sprite_accessory/S2 = GLOB.hair_styles_list[hair_style]
+				if(S2)
+					var/image/hair_overlay = image(S2.icon, "[S2.icon_state]", -HAIR_LAYER, SOUTH)
+					hair_overlay.color = "#" + hair_color
+					hair_overlay.alpha = hair_alpha
+					. += hair_overlay
+			else
 				var/image/debrain_overlay = image(layer = -HAIR_LAYER, dir = SOUTH)
 				if(animal_origin == ALIEN_BODYPART)
 					debrain_overlay.icon = 'icons/mob/animal_parts.dmi'
@@ -145,13 +157,6 @@
 					debrain_overlay.icon = 'icons/mob/human_face.dmi'
 					debrain_overlay.icon_state = "debrained"
 				. += debrain_overlay
-			else
-				var/datum/sprite_accessory/S2 = GLOB.hair_styles_list[hair_style]
-				if(S2)
-					var/image/hair_overlay = image(S2.icon, "[S2.icon_state]", -HAIR_LAYER, SOUTH)
-					hair_overlay.color = "#" + hair_color
-					hair_overlay.alpha = hair_alpha
-					. += hair_overlay
 
 
 		// lipstick
