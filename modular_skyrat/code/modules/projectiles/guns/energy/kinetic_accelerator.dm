@@ -25,7 +25,7 @@
 	item_state = "kineticgun"
 	overheat_time = 14.5
 	ammo_type = list(/obj/item/ammo_casing/energy/kinetic/premium/bdminer)
-	max_mod_capacity = 125
+	max_mod_capacity = 200
 
 /obj/item/gun/energy/kinetic_accelerator/premiumka/bdminer/attackby(obj/item/I, mob/user) //Intelligent solutions didn't work, i had to shitcode.
 	if(istype(I, /obj/item/borg/upgrade/modkit))
